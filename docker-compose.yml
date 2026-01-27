@@ -1,45 +1,28 @@
 services:
   moltbot-gateway:
-    image: ${CLAWDBOT_IMAGE:-moltbot:local}
-    environment:
-      HOME: /home/node
-      TERM: xterm-256color
-      CLAWDBOT_GATEWAY_TOKEN: ${CLAWDBOT_GATEWAY_TOKEN}
-      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
-      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
-      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
-    volumes:
-      - ${CLAWDBOT_CONFIG_DIR}:/home/node/.clawdbot
-      - ${CLAWDBOT_WORKSPACE_DIR}:/home/node/clawd
-    ports:
-      - "${CLAWDBOT_GATEWAY_PORT:-18789}:18789"
-      - "${CLAWDBOT_BRIDGE_PORT:-18790}:18790"
+    # FIX 1: Use 'build: .' to create the image from code
+    build: .
     init: true
     restart: unless-stopped
-    command:
-      [
-        "node",
-        "dist/index.js",
-        "gateway",
-        "--bind",
-        "${CLAWDBOT_GATEWAY_BIND:-lan}",
-        "--port",
-        "${CLAWDBOT_GATEWAY_PORT:-18789}"
-      ]
-
-  moltbot-cli:
-    image: ${CLAWDBOT_IMAGE:-moltbot:local}
     environment:
       HOME: /home/node
       TERM: xterm-256color
-      BROWSER: echo
+      # FIX 2: Bind to 0.0.0.0 so Coolify can proxy the connection
+      CLAWDBOT_GATEWAY_BIND: 0.0.0.0
+      CLAWDBOT_GATEWAY_TOKEN: ${CLAWDBOT_GATEWAY_TOKEN}
+      # Optional Claude keys (keep them if you use Claude)
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
     volumes:
-      - ${CLAWDBOT_CONFIG_DIR}:/home/node/.clawdbot
-      - ${CLAWDBOT_WORKSPACE_DIR}:/home/node/clawd
-    stdin_open: true
-    tty: true
-    init: true
-    entrypoint: ["node", "dist/index.js"]
+      # FIX 3: Use named volumes so you don't lose data on restarts
+      - molt_config:/home/node/.clawdbot
+      - molt_workspace:/home/node/clawd
+    ports:
+      - "18789:18789"
+      - "18790:18790"
+    command: ["node", "dist/index.js", "gateway", "--bind", "0.0.0.0", "--port", "18789"]
+
+volumes:
+  molt_config:
+  molt_workspace:
