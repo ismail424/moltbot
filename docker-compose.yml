@@ -21,7 +21,10 @@ services:
       - "18789:18789"
       - "18790:18790"
     # Ensure you keep '--allow-unconfigured' and '--bind lan'
-    command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
+    # Configure trustedProxies for reverse proxy (Coolify/Traefik) before starting gateway
+    command: >-
+      sh -c "node dist/index.js config set gateway.trustedProxies '[\"10.0.0.0/8\", \"172.16.0.0/12\", \"192.168.0.0/16\"]' &&
+             node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured"
 
 volumes:
   molt_config:
